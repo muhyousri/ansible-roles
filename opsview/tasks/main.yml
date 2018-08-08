@@ -1,0 +1,59 @@
+---
+
+- name: Check Operating System
+  fail:
+    msg="You're not running a supported operating system (CentOS or RHEL 7+)"
+  when: ((ansible_os_family != "RedHat") or (ansible_distribution_major_version|int < 7))
+
+- name: Import EPEL GPG Key
+  rpm_key: key=https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
+    state=present
+
+
+- name: Check for EPEL repo
+  yum: name=https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    state=present
+
+- name: install opsview
+  yum: name=http://downloads.opsview.com/opsview-core/latest/yum/centos/7/x86_64/opsview-agent-4.6.0.436-1.ct7.x86_64.rpm
+    state=present
+
+
+
+- name: Install Common Plugins
+  yum: name={{ item }} state=present
+  with_items:
+    - libmcrypt
+    - glibc.i686
+    - ksh
+    - libsemanage-python
+
+
+
+- name: Enable Firewall
+  command: systemctl {{ item }} firewalld
+       - unmask 
+       - enable
+       - restart 
+  ignore_errors: true
+
+- name: Add firewall rule for opsview
+  shell: firewall-cmd --permanent --zone=public --add-rich-rule='rule family="ipv4" source address="94.75.230.111/32" port protocol="tcp" port="2501" accept'
+  ignore_errors: true
+
+
+
+- name: Restart firewall-services
+  shell: firewall-cmd --reload
+  ignore_errors: true
+
+
+- name: Start opsview service
+  command: systemctl restart opsview-agent.service
+  ignore_errors: true
+
+- name: Set opsview to start on boot
+  command: systemctl enable opsview-agent.service
+  ignore_errors: true
+
+

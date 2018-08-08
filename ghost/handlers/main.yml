@@ -1,0 +1,4 @@
+---
+
+- name: restart ghost
+  service: name=nginx state=restarted enabled=yes

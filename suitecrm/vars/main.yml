@@ -1,0 +1,28 @@
+#vars_prompt:
+ #  - name: "domainname"
+  #   prompt: "what is your domain name "
+   #- name: "password"
+    # prompt: "what is your your DB root passowrd ?"
+
+---
+ #yourdomain: ali.tt
+ #password: ali.1234        
+
+
+
+
+
+
+
+
+
+
+ suitecrm_version: 7.8.2
+ uploadmaxfilesize:  64M
+ maxexecutiontime: 300
+ memorylimit: 512M
+ postmaxsize: 64M
+ datetimezone: Africa/Cairo
+ suitecrm_apache_user: www-data
+ suitecrm_apache_user-ce: apache
+

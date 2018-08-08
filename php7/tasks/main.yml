@@ -1,0 +1,64 @@
+---
+
+- name: Installing PHP
+  apt: name=php state=present
+  when: ansible_os_family == "Debian"
+
+- name: copy webstatic rpm 
+  copy:
+    src: webtatic-release.rpm
+    dest: /home/webtatic-release.rpm
+    owner: root
+    group: root
+    mode: 0755
+  when: ansible_os_family == "RedHat"
+
+- name: Installing webstatic repo
+  yum:
+    name: /home/webtatic-release.rpm
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Installing PHP
+  yum: name=php70w state=present
+  when: ansible_os_family == "RedHat"
+
+
+
+
+
+- name: install additional ackages of php
+  apt: name={{ item }}
+         state=latest
+  with_items:
+          - php-mysql
+          - libapache2-mod-php
+          - php-mysql
+          - php-gd
+          - php-mcrypt   
+          - php-dom  
+          - php-intl 
+          - php-mbstring
+          - php-xmlrpc 
+          - php-soap 
+          - php-curl 
+          - php-zip 
+  when: ansible_os_family == "Debian"
+
+- name: install important php extensions
+  yum: name={{ item }}
+         state=latest
+  with_items:
+          - php70w-mysql
+          - php70w-gd
+          - php70w-dom
+          - php70w-mcrypt
+          - php70w-intl
+          - php70w-mbstring
+          - php70w-xmlrpc
+          - php70w-soap 
+          - php70w-curl 
+          - php70w-zip 
+  when: ansible_os_family == "RedHat"
+
+

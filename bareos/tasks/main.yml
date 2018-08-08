@@ -1,0 +1,42 @@
+---
+
+
+- include: client.yml
+  when: "'bareos-clients' in group_names"
+
+- include: server.yml
+  when: "'baroes-servers' in group_names"
+
+#- name: copy conf to bareos-dir
+#  copy:
+#    src: /home/bareosfd.conf
+#    dest: /tmp/bareosfd.conf
+#    mode: 0744
+#    force: yes
+
+
+#- name: if not added append conf to bareos-dir.conf
+#  shell: cat /tmp/bareosfd.conf >> /etc/bareos/bareos-dir.conf
+
+
+
+
+
+
+
+
+
+
+
+#  notify: restart bareos-dir
+ # when: "'bareos-servers' in group_names"
+
+
+
+#- name : "test template"
+#  template:
+#   src: test.j2
+#   dest: /home/test.txt
+#- name: "print password"
+#  debug:
+#    var: bareos_pass

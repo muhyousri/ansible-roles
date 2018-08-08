@@ -1,0 +1,65 @@
+---
+   - name: Installing httpd
+     yum:  name=httpd state=latest
+     when: ansible_os_family == "RedHat"
+
+   - name: Installing mod_ssl
+     yum:  name=mod_ssl state=latest
+     when: ansible_os_family == "RedHat"
+
+
+   - name: Installing apache
+     apt:  name=apache2 state=latest
+     when: ansible_os_family == "Debian"
+
+   - name: Installing mod_ssl
+     command: sudo a2enmod ssl
+     when: ansible_os_family == "Debian"
+
+   - name: Installing mod_rewrite
+     command: sudo a2enmod rewrite
+     when: ansible_os_family == "Debian"
+
+
+#   - name: Configure Virtualhost
+#     template:
+#       src=httpd.conf.j2
+#       dest=/etc/apache2/sites-available/{{ domain }}.conf
+#     when: ansible_os_family == "Debian"
+#
+#   - name: Configure Virtualhost
+#     template:
+#       src=httpdcentos.conf.j2
+#       dest=/etc/httpd/conf.d/{{ domain }}.conf 
+#     when: ansible_os_family == "RedHat"
+#
+#
+
+
+#  - name: delete old virtual host
+#   file:
+#   path=/etc/httpd/sites-enabled/000-default.conf
+#  state=absent
+#    when: ansible_os_family == "RedHat"
+#     ignore_errors: yes
+
+#  - name: delete old virtual host
+#    file:
+#     path=/etc/apache2/sites-enabled/000-default.conf
+#     state=absent 
+#    when: ansible_os_family == "Debian"
+#    ignore_errors: yes
+
+
+
+# - name: activat new virtualhost
+#   file:
+#     src=/etc/apache2/sites-available/{{ domain }}.conf
+#     dest=/etc/apache2/sites-enabled/{{ domain }}.conf
+#     state=link
+#   notify:
+#   - restart apache2
+#   when: ansible_os_family == "Debian"
+  
+
+

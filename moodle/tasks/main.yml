@@ -1,0 +1,146 @@
+---
+
+
+- name: "remove the old directories "
+  file:
+     path: /var/www/html/moodle
+     state: absent
+
+- name: "create moodle data directory "
+  file:
+     path: /var/www/html/moodle/moodledata
+     state: directory
+     mode: 777
+
+
+- name: Ubuntu | Configure Virtualhost
+  template:
+    src=httpd.conf.j2
+    dest=/etc/apache2/sites-enabled/{{ domain }}.conf
+  when: ansible_os_family == "Debian"
+
+- name: RedHat | Configure Virtualhost
+  template:
+    src=httpdcentos.conf.j2
+    dest=/etc/httpd/conf.d/{{ domain }}.conf
+  when: ansible_os_family == "RedHat"
+
+
+
+
+
+- name: Download Source
+  get_url: 
+    url=https://download.moodle.org/stable34/moodle-latest-34.tgz
+    dest=/tmp/moodle.tgz
+    validate_certs=no 
+
+
+
+- name: Extract Source
+  become: yes
+  unarchive: src=/tmp/moodle.tgz dest=/var/www/html/ copy=no
+
+
+
+
+
+- name: "Change file ownership, group and mode"
+  shell: find /var/www/html/moodle -type d -exec chmod 0755 {} \; && find /var/www/html/moodle -type f -exec chmod 0644 {} \; && chown -R www-data:www-data /var/www/html/moodle
+  when: ansible_os_family == "Debian"
+
+
+- name: "Change file ownership, group and mode"
+  shell: find /var/www/html/moodle -type d -exec chmod 0755 {} \; && find /var/www/html/moodle -type f -exec chmod 0644 {} \; && chown -R apache:apache /var/www/html/moodle
+  when: ansible_os_family == "RedHat"
+
+
+
+
+
+- name: "change dir ownership"
+  file:
+      path: /var/www/html/moodle
+      owner: www-data
+      group: www-data
+      mode: 0755
+      state: directory
+      recurse: no
+  when: ansible_os_family == "Debian"
+  notify:
+    - restart apache2
+
+
+
+
+- name: "change dir ownership"
+  file:
+      path: /var/www/html/moodle
+      owner: apache
+      group: apache
+      mode: 0755
+      state: directory
+      recurse: no
+  when: ansible_os_family == "RedHat"
+  notify:
+    - restart httpd
+
+
+
+
+- name: Create a new database
+  mysql_db:
+    name: 'moodledb'
+    login_password: '{{ mysql_root_passwd }}'
+    state: present
+
+- name: Create a new database user
+  mysql_user:
+    name: 'moodledbusr'
+    password: '123456789'
+    login_password: '{{ mysql_root_passwd }}'
+    priv: 'moodledb.*:ALL'
+    state: present
+
+- name: update mysql config
+  template:
+    src: my.cnf.j2
+    dest: /etc/my.cnf
+  notify:
+    - restart mariadb
+  when: ansible_os_family == "RedHat"
+
+- name: update mysql config
+  template:
+    src: my.cnf.j2
+    dest: /etc/my.cnf
+  notify:
+    - restart mysql-server
+  when: ansible_os_family == "Debian"
+
+
+- name: Update moodle config file
+  template:
+    src: config.php.j2
+    dest: /var/www/html/moodle/config.php
+    owner: apache
+    group: apache
+  notify:
+    - restart httpd
+  when: ansible_os_family == "RedHat"
+
+
+- name: Update moodle config file
+  template:
+    src: config.php.j2
+    dest: /var/www/html/moodle/config.php
+    owner: www-data
+    group: www-data
+  notify:
+    - restart apache2
+  when: ansible_os_family == "Debian"
+
+- include: phpmyadmin.yml
+- include: ftpuser.yml
+- include: firewall.yml
+#- include: ssl.yml

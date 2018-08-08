@@ -1,0 +1,35 @@
+Client {
+  Name = {{ inventory_hostname }}
+  Password = {{ bareos_pass.stdout }}
+  Address = {{ ansible_eth0.ipv4.address }}
+  FDPort = 9105
+  Catalog = MyCatalog
+  File Retention = 0 days
+  Job Retention = 0 months
+}
+Schedule {
+  Name = {{ inventory_hostname }}_Monthly
+  Run = Level=Full Pool={{ inventory_hostname }}_Full jan-dec on 15 at 05:00
+}
+Pool {
+  Name = {{ inventory_hostname }}_Full
+  Pool Type = Backup
+  Volume Retention = 30 days
+  Recycle = yes
+  AutoPrune = yes
+  LabelFormat = Full.{{ inventory_hostname }}-
+  Maximum Volume Bytes = 50G
+  MaximumVolumes = 5
+}
+Job {
+  Name = {{ inventory_hostname }}_M
+  Type = Backup
+  Level = Full
+  Client = yaqob.com
+  FileSet = cPanel_Backup
+  Schedule = {{ inventory_hostname }}_Monthly
+  Storage = rb-bsd02.exaservers.com
+  Pool = {{ inventory_hostname }}_Full
+  Messages = Standard
+}
+

@@ -1,0 +1,36 @@
+---
+
+- name: add ftp group
+  group:
+    name: ftp-users
+    state: present
+
+- name: add user
+  user:
+    name: ftp-user
+    group: ftp-users
+
+- name: install acl for permissions 
+  apt:
+    name: acl
+    state: latest 
+  when: ansible_os_family == "Debian"
+
+
+- name: Installing PHP
+  yum: name=acl state=present
+  when: ansible_os_family == "RedHat"
+
+
+
+- name: Set  ftp-user password
+  shell: echo ftp-user:{{ ftp_passwd }} | sudo chpasswd
+
+- name: mount web directory to ftp-user
+  command: usermod ftp-user -d /var/www/html/{{ domain }}
+- name: give ftp-user access to web directory
+  command: setfacl -R -m  u:ftp-user:rwx /var/www/html/{{ domain }}
+
+
+  
+

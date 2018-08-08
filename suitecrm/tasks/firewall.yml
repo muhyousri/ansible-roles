@@ -1,0 +1,24 @@
+---
+#- name: Enable Firewall
+#  command: systemctl {{ item }} firewalld
+#  with_items: 
+#       - unmask
+#       - enable
+#       - restart
+#  ignore_errors: true
+#  when: ansible_os_family == "RedHat"
+
+
+- name: Allow http/https/smtp/imap/pop3/ssh
+  command: firewall-cmd --zone=public --permanent --add-service=http --add-service=https --add-service=smtp --add-service=ssh --add-service=imap --add-service=ftp  
+  ignore_errors: true
+  when: ansible_os_family == "RedHat"
+
+
+
+- name: Restart firewall-services
+  shell: firewall-cmd --reload
+  ignore_errors: true
+  when: ansible_os_family == "RedHat"
+
+

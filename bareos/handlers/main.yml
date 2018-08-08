@@ -1,0 +1,4 @@
+- name: restart bareos-dir
+  service: 
+   name: bareos-dir
+   state: restarted

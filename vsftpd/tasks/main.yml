@@ -1,0 +1,49 @@
+---
+
+
+- name: "CentOs | Install Vsftpd"
+  yum:
+    name: vsftpd
+  when: ansible_os_family == "RedHat"
+
+- name: CentOs | configure vsftpd
+  copy:
+    src: vsftpd.conf
+    dest: /etc/vsftpd/vsftpd.conf
+  notify:
+    restart vsftpd  
+  when: ansible_os_family == "RedHat"
+
+
+- name: "disable Selinux"
+  selinux:
+    policy: targeted
+    state: permissive
+  ignore_errors: true
+  when: ansible_os_family == "RedHat"
+
+- name: "Ubuntu | INstall Vsftpd"
+  apt:
+    name: vsftpd
+  when: ansible_os_family == "Debian"
+
+- name: install acl for permissions
+  apt:
+    name: acl
+    state: latest
+  when: ansible_os_family == "Debian"
+
+- name: configure vsftpd
+  copy:
+    src: vsftpd-ubuntu.conf
+    dest: /etc/vsftpd.conf
+  notify:
+    restart vsftpd
+  when: ansible_os_family == "Debian"
+
+
+
+
+
+
+

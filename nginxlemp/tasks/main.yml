@@ -1,0 +1,86 @@
+---
+
+#Role to install nginx mohamed Yousri - 26/10/2017
+- name: install nginx Repo
+  yum: name=epel-release state=present
+  when: ansible_os_family == "RedHat"
+
+
+
+- name: install nginx
+  apt: name=nginx state=present update_cache=yes
+  when: ansible_os_family == "Debian"
+
+- name: install nginx
+  yum: name=nginx state=present
+  when: ansible_os_family == "RedHat"
+
+
+- name: Create nginx directory structure
+  file: path=/etc/nginx/sites-enabled/
+   state=directory
+   mode=0755
+
+#- name: create nginx config files
+#  template: src=nginx.j2 dest=/etc/nginx/nginx.conf
+
+
+- name: create new root directory
+  file: path=/var/www/html/{{ domain }} state=directory
+
+
+- name: create website default index
+  template: src=index.j2 dest=/var/www/html/{{ domain }}/index.html
+
+- name: "change dir ownership"
+  file:
+      path: /var/www/html/{{ domain }}
+      owner: www-data
+      group: www-data
+      mode: 0755
+      state: directory
+      recurse: no
+  when: ansible_os_family == "Debian"
+
+
+
+
+- name: "change dir ownership"
+  file:
+      path: /var/www/html/{{ domain }}
+      owner: nginx
+      group: nginx
+      mode: 0755
+      state: directory
+      recurse: no
+  when: ansible_os_family == "RedHat"
+
+
+#- name: create virtual hosts
+#  template: src=host.j2 dest=/etc/nginx/sites-enabled/{{ domain }}
+#  notify: restart nginx
+
+
+
+
+
+- name: Ubuntu | Configure Virtualhost
+  template:
+    src=nginx.conf.j2
+    dest=/etc/nginx/sites-enabled/{{ domain }}.conf
+  notify:
+    - restart nginx
+  when: ansible_os_family == "Debian"
+
+- name: RedHat | Configure Virtualhost
+  template:
+    src=nginxcentos.conf.j2
+    dest=/etc/nginx/conf.d/{{ domain }}.conf
+  notify:
+    - restart nginx
+  when: ansible_os_family == "RedHat"
+
+- include: phpmyadmin.yml
+- include: ftpuser.yml
+- include: firewall.yml 
+#- include: ssl.yml

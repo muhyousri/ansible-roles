@@ -1,0 +1,31 @@
+---
+
+- name: create group for ghost
+  group:
+    name: ghost
+    state: present
+- name: Add new user for ghost
+  user:
+    name: ghost
+    group: ghost
+
+- name: Create new root directory
+  file: path=/var/www/html/ghost/{{ domain }} state=directory owner=ghost group=ghost
+
+- name: Install Ghost-cli Pacakge
+  npm: 
+    name: ghost-cli
+    global: yes
+    state: latest 
+    production: yes
+
+#- name: Clean root directory 
+#  shell: "/bin/rm -rf path=/var/www/html/{{ domain }}/*"
+
+- name: Configure & Setup Ghost
+  shell: "ghost install --url=http://{{ domain }} --db=mysql --dbhost=localhost --dbuser=root --dbpass={{ mysql_root_passwd }} --dbname=ghost_db --no-prompt   --start"
+  args:
+    chdir: /var/www/html/ghost/{{ domain }}
+  notify:
+  - restart ghost
+

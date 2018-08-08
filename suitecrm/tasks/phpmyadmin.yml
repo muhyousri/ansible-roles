@@ -1,0 +1,61 @@
+---
+
+- name: install debconf Repo
+  yum: name=epel-release state=present
+  when: ansible_os_family == "RedHat"
+
+- name: install debconf
+  yum: name=debconf state=present
+  when: ansible_os_family == "RedHat"
+
+
+- name: debconf for pma
+  debconf: name=phpmyadmin question='phpmyadmin/dbconfig-install' value='true' vtype='boolean'
+
+- name: debconf for pma
+  debconf: name=phpmyadmin question='phpmyadmin/app-password-confirm' value='{{mysql_root_passwd}}' vtype='password'
+
+- name: debconf for pma
+  debconf: name=phpmyadmin question='phpmyadmin/mysql/admin-pass' value='{{mysql_root_passwd}}' vtype='password'
+
+- name: debconf for pma
+  debconf: name=phpmyadmin question='phpmyadmin/mysql/app-pass' value='{{mysql_root_passwd}}' vtype='password'
+
+- name: debconf for pma
+  debconf: name=phpmyadmin question='phpmyadmin/reconfigure-webserver' value='' vtype='multiselect'
+
+- name: install pma
+  apt: pkg=phpmyadmin state=present
+  when: ansible_os_family == "Debian"
+
+- name: install pma
+  yum: name=phpmyadmin state=present
+  when: ansible_os_family == "RedHat"
+
+
+- name: copy config
+  template: src=conf.j2 dest=/etc/httpd/conf.d/phpMyAdmin.conf
+  when: ansible_os_family == "RedHat"
+
+- name: copy config
+  template: src=conf_ubuntu.j2 dest=/etc/apache2/sites-enabled/phpMyAdmin.conf
+  when: ansible_os_family == "Debian"
+
+
+- name: configure site
+  shell: ln -s /usr/share/phpmyadmin /var/www/html/suitecrm
+  when: ansible_os_family == "Debian"
+ 
+- name: configure site
+  shell: ln -s  /usr/share/phpMyAdmin /var/www/html/suitecrm/phpmyadmin
+  when: ansible_os_family == "RedHat"
+
+- name: change owner
+  shell: chown -R www-data:www-data /var/www/html/suitecrm/phpmyadmin
+  when: ansible_os_family == "Debian"
+
+- name: change owner
+  shell: chown -R apache:apache /var/www/html/suitecrm
+  when: ansible_os_family == "RedHat"
+
+

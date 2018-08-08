@@ -1,0 +1,9 @@
+---
+
+
+ vars_prompt:
+   - name: "test"
+     prompt: "right ?"
+     private: no
+
+

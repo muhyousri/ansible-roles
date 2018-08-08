@@ -1,0 +1,38 @@
+---
+
+
+
+- name: install Node.js PPA/repo
+  script: setup.sh
+  when: ansible_os_family == "Debian"
+
+- name: install Node.js PPA/repo
+  script: setup_centos.sh
+  when: ansible_os_family == "RedHat"
+
+
+
+
+
+
+- name: install Node.js
+  apt: name=nodejs state=present
+  when: ansible_os_family == "Debian"
+
+- name: install Node.js
+  yum: name=nodejs state=present
+  when: ansible_os_family == "RedHat"
+
+
+
+
+
+
+
+- name: npm ( Node.js Package manager )
+  apt: name=build-essential state=present update_cache=yes
+  when: ansible_os_family == "Debian"
+
+- name: npm ( Node.js Package manager )
+  yum: name=build-essential state=present
+  when: ansible_os_family == "RedHat"

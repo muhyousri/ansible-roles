@@ -1,0 +1,44 @@
+- name: install letsencrypt
+  yum:
+    name: letsencrypt
+    state: latest
+  when: ansible_os_family == "RedHat"
+
+
+- name: install letsencrypt
+  apt:
+    name: letsencrypt
+    state: latest
+  when: ansible_os_family == "Debian"
+
+
+
+- name: restart nginx
+  service: name=nginx state=restarted enabled=yes
+
+
+- name: sign certificate 
+  command: letsencrypt -d {{ domain }} --webroot --webroot-path=/var/www/html/wordpress --agree-dev-preview --agree-tos  --email {{ email }} certonly -n
+  #ignore_errors: true
+
+
+- name: configure webserver
+  template:
+    src: nginx-centos-ssl.j2
+    dest: /etc/nginx/conf.d/{{domain}}-ssl.conf
+  notify: restart nginx
+  when: ansible_os_family == "RedHat"
+  
+- name: configure webserver
+  template:
+    src: nginx-ubuntu-ssl.j2
+    dest: /etc/nginx/conf.d/{{domain}}-ssl.conf
+  notify: restart nginx
+  when: ansible_os_family == "Debian"
+
+#- name: configure cron for auto-renewal
+#  cron:
+#    name: auto-renew
+#    minute: "0"
+#    job: sh letsencrypt -d {{ domain }} --webroot --webroot-path=/var/www/html/wordpress --agree-dev-preview --agree-tos  --email {{ email }} certonly -n
+

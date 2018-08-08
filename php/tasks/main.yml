@@ -1,0 +1,42 @@
+---
+
+- name: Installing PHP
+  apt: name=php state=present
+  when: ansible_os_family == "Debian"
+
+- name: install epel Repo
+  yum: name=epel-release state=present
+  when: ansible_os_family == "RedHat"
+
+
+
+- name: Installing PHP
+  yum: name=php state=present
+  when: ansible_os_family == "RedHat"
+
+
+
+
+
+- name: install packages of php
+  apt: name={{ item }}
+         state=latest
+  with_items:
+          - php-mysql
+          - libapache2-mod-php
+          - php-mbstring
+          - php-mcrypt
+          - php-curl
+  when: ansible_os_family == "Debian"
+
+- name: install packages of php
+  yum: name={{ item }}
+         state=latest
+  with_items:
+          - php-mysql
+          - php-mbstring
+          - php-mcrypt
+          - php-curl
+  when: ansible_os_family == "RedHat"
+
+

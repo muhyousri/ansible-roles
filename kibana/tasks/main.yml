@@ -1,0 +1,68 @@
+---
+#
+# Installing Kibana
+#
+# Add Kibana APT-repository
+
+
+- name: Adding Kibana APT repository
+  apt_repository:
+   repo: deb https://artifacts.elastic.co/packages/6.x/apt stable main
+   state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Add kibana key
+  rpm_key:
+   key: "https://packages.elastic.co/GPG-KEY-elasticsearch"
+   state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Add Kibana repository.
+  copy:
+    src: kibana.repo
+    dest: /etc/yum.repos.d/kibana.repo
+    mode: 0644
+  when: ansible_os_family == 'RedHat'
+# Install Kibana
+- name: Update repositories cache and install Kibana
+  apt:
+   name: kibana
+   update_cache: yes
+  when: ansible_os_family == 'Debian'
+
+
+- name: Install Kibana.
+  package: name=kibana state=present
+  when: ansible_os_family == 'RedHat'
+
+# Update kibana config file to only accept local connections
+- name: Updating the config file to restrict outside access
+  lineinfile:
+   destfile: /opt/kibana/config/kibana.yml
+   regexp: 'server.host:'
+   line: 'server.host: localhost'
+  when: ansible_os_family == 'Debian'
+
+- name: Updating the config file to restrict outside access
+  lineinfile:
+   destfile: /etc/kibana/kibana.yml
+   regexp: 'server.host:'
+   line: 'server.host: localhost'
+  when: ansible_os_family == 'RedHat'
+
+
+
+# Enable Kibana service
+- name: Enabling Kibana service
+  systemd:
+   name: kibana
+   enabled: yes
+   daemon_reload: yes
+# Start Kibana service
+- name: Starting Kibana service
+  systemd:
+   name: kibana
+   state: started
+
+- include: kibana-nginx.yml
+

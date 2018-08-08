@@ -1,0 +1,270 @@
+---
+- name: "Install dependencies"
+  apt: 
+     pkg: "{{ item }}"
+     state: present
+  with_items:
+     - unzip
+     - php
+     - php-gd
+     - php-mysql
+     - php-mbstring
+     - php-xml
+     - php-imap
+  when: ansible_os_family == "Debian"
+
+- name: "Install dependencies"
+  yum:
+    pkg: "{{ item }}"
+    state: present
+  with_items:
+     - php70w
+     - php70w-mysql
+     - php70w-xml
+     - php70w-json
+     - php70w-gd
+     - php70w-mbstring
+     - php70w-zip
+     - php70w-imap
+     - php70w-pcre
+     - php70w-zlib
+     - php70w-curl
+  when: ansible_os_family == "RedHat"
+
+
+- name: "file php.ini configuration"
+  copy:
+         src: php.ini
+         dest: /etc/
+  notify:
+     - restart httpd
+  when: ansible_os_family == "RedHat"
+
+- name: "file php.ini configuration"
+  copy:
+         src: php.ini2
+         dest: /etc/php/7.0/cli/php.ini
+  notify:
+     - restart apache2
+  when: ansible_os_family == "Debian"
+
+#- name: "remove the old php.ini "
+#  file:
+#    path: /etc/php/7.0/apache2/php.ini
+#    state: absent
+
+#- name: "Copy new php.ini"
+#  copy:
+#    src: php.ini
+#    dest: /etc/php/7.0/apache2/
+
+
+
+- name: "Copy new SuiteCRM zipfile"
+  copy:
+    src: SuiteCRM-{{ suitecrm_version }}.zip
+    dest: /var/www/html
+
+
+- name: Ubuntu | Configure Virtualhost
+  template:
+    src=httpd.conf.j2
+    dest=/etc/apache2/sites-enabled/{{ domain }}.conf
+  when: ansible_os_family == "Debian"
+
+- name: RedHat | Configure Virtualhost
+  template:
+    src=httpdcentos.conf.j2
+    dest=/etc/httpd/conf.d/{{ domain }}.conf
+  when: ansible_os_family == "RedHat"
+
+
+
+- name: "remove the old directories "
+  file:
+    path: /var/www/html/suitecrm
+    state: absent
+
+- name: "Copy new SuiteCRM zipfile"
+  copy: 
+    src: SuiteCRM-{{ suitecrm_version }}.zip 
+    dest: /var/www/html
+
+- name: "Unzip SuiteCRM"
+  unarchive:
+    src: /var/www/html/SuiteCRM-{{ suitecrm_version }}.zip
+    dest: /var/www/html
+    remote_src: True
+
+- name: "Move SuiteCRM to www directory" 
+  command: mv /var/www/html/SuiteCRM-{{ suitecrm_version }}  /var/www/html/suitecrm
+
+
+- name: "Copy new phpmyadmin config"
+  copy:
+    src: config.inc.php
+    dest: /etc/phpMyAdmin/
+   
+
+
+- name: Install yum-cron.
+  package: name=yum-cron state=present
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure yum-cron is running and enabled on boot.
+  service: name=yum-cron state=started enabled=yes
+  when: ansible_os_family == "RedHat"
+
+
+- name: Set up crontab
+  cron: name="suitecrm scheduler"   job="su -s /bin/bash -c 'cd /var/www/html/suitecrm; php -f cron.php > /dev/null 2>&1' apache" 
+  when: ansible_os_family == "RedHat"
+
+- name: Set up crontab
+  cron: name="suitecrm scheduler" job="su -s /bin/bash -c 'cd /var/www/html/suitecrm; php -f cron.php > /dev/null 2>&1' www-data"
+  when: ansible_os_family == "Debian"
+
+
+
+- name: Set other directories permissions
+  file:
+    path: "/var/www/html/suitecrm"
+    owner: "{{ suitecrm_apache_user }}"
+    group: "{{ suitecrm_apache_user }}"
+    mode: 0766
+    state: directory
+    recurse: no
+  when: ansible_os_family == "Debian"
+
+- name: Set other directories permissions
+  file:
+    path: "/var/www/html/suitecrm"
+    owner: "apache"
+    group: "apache"
+    mode: 0766
+    state: directory
+    recurse: no
+  when: ansible_os_family == "RedHat"
+
+
+
+- name: Create a new database
+  mysql_db:
+    name: 'crmdb'
+    login_password: '{{ mysql_root_passwd }}'
+    state: present
+
+
+- name: Create a new database user
+  mysql_user:
+    name: 'crmusr'
+    password: '123456789'
+    login_password: '{{ mysql_root_passwd }}'
+    priv: 'crmdb.*:ALL'
+    state: present
+
+
+
+
+- name: "Copy config_si.php to SuiteCRM root"
+  template:
+    src: "config_si.php.j2"
+    dest: "/var/www/html/suitecrm/config_si.php"
+    owner: "apache"
+    group: "apache"
+    mode: '0644'
+  when: ansible_os_family == "RedHat"
+
+- name: "Copy config_si.php to SuiteCRM root"
+  template:
+    src: "config_si.php.j2"
+    dest: "/var/www/html/suitecrm/config_si.php"
+    owner: "{{ suitecrm_apache_user }}"
+    group: "{{ suitecrm_apache_user }}"
+    mode: '0644'
+  when: ansible_os_family == "Debian"
+
+
+
+- name: Install SuiteCRM
+  shell: php -r "\$_SERVER['HTTP_HOST'] = 'localhost'; \$_SERVER['REQUEST_URI'] = 'install.php';\$_REQUEST = array('goto' => 'SilentInstall', 'cli' => true);require_once 'install.php';";
+  args:
+    chdir: "/var/www/html/suitecrm"
+    creates: "/var/www/html/suitecrm/config.php"
+
+
+
+
+
+- name: "Change file ownership, group and mode"
+  shell: find /var/www/html/suitecrm -type d -exec chmod 0766 {} \; && find /var/www/html/suitecrm -type f -exec chmod 0655 {} \; && chown -R apache:apache /var/www/html/suitecrm
+  when: ansible_os_family == "RedHat"
+
+- name: "Change file ownership, group and mode"
+  shell: find /var/www/html/suitecrm -type d -exec chmod 0766 {} \; && find /var/www/html/suitecrm -type f -exec chmod 0644 {} \; && chown -R www-data:www-data /var/www/html/suitecrm
+  when: ansible_os_family == "Debian"
+
+
+- name: Set config_override.php permissions
+  file:
+    path: "/var/www/html/suitecrm/config_override.php"
+    owner: "apache"
+    group: "apache"
+    mode: 0666
+  when: ansible_os_family == "RedHat"
+
+- name: Set config_override.php permissions
+  file:
+    path: "/var/www/html/suitecrm/config_override.php"
+    owner: "{{ suitecrm_apache_user }}"
+    group: "{{ suitecrm_apache_user }}"
+    mode: 0666
+  when: ansible_os_family == "Debian"
+
+- name: Set cache permissions
+  file:
+    path: "/var/www/html/suitecrm/cache"
+    owner: "apache"
+    group: "apache"
+    mode: 0777
+    state: directory
+  when: ansible_os_family == "RedHat"
+
+- name: Set cache permissions
+  file:
+    path: "/var/www/html/suitecrm/cache"
+    owner: "{{ suitecrm_apache_user }}"
+    group: "{{ suitecrm_apache_user }}"
+    mode: 0777
+    state: directory
+  when: ansible_os_family == "Debian"
+
+
+- name: install Zip Extension
+  shell: yum install php-zip
+  when: ansible_os_family == "RedHat"
+#- name:  install php-curl
+#  shell:  yum install --reinstall php-curl
+
+  notify:
+     - restart httpd
+  when: ansible_os_family == "RedHat"
+
+
+
+- name: install Zip Extension
+  shell: apt install php-zip
+  when: ansible_os_family == "Debian"
+- name:  install php-curl
+  shell:  apt install --reinstall php-curl
+
+  notify:
+     - restart apache2
+  when: ansible_os_family == "Debian"
+
+
+
+- include: phpmyadmin.yml
+- include: ftpuser.yml
+- include: firewall.yml
+

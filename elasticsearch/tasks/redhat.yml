@@ -1,0 +1,35 @@
+---
+#
+# Installing Elasticsearch
+#
+# Adds the apt-key for Elasticsearch
+- name: Add Elasticsearch apt-key
+  rpm_key:
+   key: "https://packages.elastic.co/GPG-KEY-elasticsearch"
+   state: present
+# Add the Elasticsearch APT-repository
+  # baseurl: https://artifacts.elastic.co/packages/5.x/apt stable main
+#- name: RedHat - add Elasticsearch repo
+ # template: src=elasticsearch.repo dest=/etc/yum.repos.d/elasticsearch-5.x.repo
+  #when: es_use_repository
+# Install Elasticsearch
+
+- name: Add Elasticsearch repository.
+  copy:
+    src: elasticsearch.repo
+    dest: /etc/yum.repos.d/elasticsearch.repo
+    mode: 0644
+
+- name: Install Elasticsearch.
+  yum: pkg=elasticsearch state=installed
+# Update Elasticsearch config file to only allow localhost connections
+- name: Updating the config file to restrict outside access
+  lineinfile:
+   destfile: /etc/elasticsearch/elasticsearch.yml
+   regexp: 'network.host:'
+   line: 'network.host: localhost'
+# Restart Elasticsearch
+- name: Restarting Elasticsearch
+  service:
+   name: elasticsearch
+   state: restarted

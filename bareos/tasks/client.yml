@@ -1,0 +1,65 @@
+---
+
+
+- name: copy script
+  copy:
+    src: bareos-fd.sh
+    dest: /home/bareos-fd.sh
+    mode: 0744
+
+- name: "Run bareos Script"
+  command: sh /home/bareos-fd.sh
+  register: bareos_pass
+
+#- name: "save password"
+#  set_fact:
+#   pass: "{{ bareos_pass.stdout }}"
+
+
+
+# name: "print password"
+#  debug:
+#    var: pass
+
+
+- name: myself config
+  template:
+    src: myself.j2
+    dest: /etc/bareos/bareos-fd.d/client/myself.conf
+    owner: root
+    group: root
+
+- name: get hostvar
+  template:
+    src: hostvar.j2
+    dest: /home/hostvar.yml
+
+- name: copy dedicated cpnfguration
+  template:
+    src: dedicated.j2
+    dest: /home/bareosfd.conf
+    owner: root
+    group: root
+  when: ansible_virtualization_role == "host"
+
+- name: copy vps cpnfguration
+  template:
+    src: vps.j2
+    dest: /home/bareosfd.conf
+    owner: root
+    group: root
+  when: ansible_virtualization_role == "guest"
+
+- name: copy hostvar to controller
+  fetch:
+    src: /home/hostvar.yml
+    dest: /home/hostvar.yml
+    flat: yes
+
+- name: Copy conf to controller
+  fetch:
+    src: /home/bareosfd.conf
+    dest: /home/bareosfd.conf
+    flat: yes
+
+

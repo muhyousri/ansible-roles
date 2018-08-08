@@ -1,0 +1,12 @@
+<VirtualHost *:80>
+ ServerAdmin admin@{{ domain }}
+ DocumentRoot /var/www/html/moodle/
+ ServerName {{ domain }}
+ ServerAlias www.{{ domain }}
+<Directory /var/www/html/moodle/>
+ Options FollowSymLinks
+ AllowOverride All
+</Directory>
+ ErrorLog /var/log/apache2/moodle-error_log
+ CustomLog /var/log/apache2/moodle-access_log common
+</VirtualHost>

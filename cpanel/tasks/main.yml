@@ -1,0 +1,70 @@
+---
+
+
+## Role to install Cpanel by Mohamed Yousri - 9/11/2017          
+
+
+
+## Prompt for hostname ##
+
+- name : Change Hostname
+  hostname:
+    name: "{{ hostname }}"
+
+## NetworkManager is not supported by CPanel and must be replaced first with network ##
+- name: Start Network Service
+  service: 
+    name: network
+    state: started
+    enabled : yes
+
+
+- name: Stop and disable NetworkManager Service 
+  service: 
+    name: NetworkManager
+    state: stopped
+    enabled : no
+  ignore_errors: yes
+
+
+## Perl and Base group must be installed ##
+
+- name: ensure perl is installed 
+  yum:
+    name: perl
+    state: latest
+
+- name: ensure base group is installed
+  yum:
+    name: "@base"
+    state: latest
+
+
+## libselinux Must be installed if Selinux is enabled 
+#
+- name: install libselinux-python
+  yum:
+   name: libselinux-python
+   state: latest
+
+## if installation stopped for any reason root/installer.lock must be removed to continue
+- name: remove old lock files ( if any )
+  file:
+    path: /root/installer.lock
+    state: absent
+  ignore_errors: yes    
+
+
+## Install ##
+
+- name: copy install script
+  copy:
+    src: latest.sh
+    dest: /var/latest.sh
+    mode: 0755 
+
+- name: start installation
+  shell: bash latest.sh
+  args: 
+    chdir: /var
+

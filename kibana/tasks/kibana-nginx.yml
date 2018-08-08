@@ -1,0 +1,108 @@
+---
+#
+# Installing Nginx
+#
+# Install Nginx
+- name: Update repositories cache and install Nginx
+  apt:
+   name: nginx
+   update_cache: yes
+  when: ansible_os_family == 'Debian'
+
+- name: install nginx Repo
+  yum: name=epel-release state=present
+  when: ansible_os_family == "RedHat"
+
+
+- name: Update repositories cache and install Nginx
+  yum:
+   name: nginx
+   update_cache: yes
+  when: ansible_os_family == 'RedHat'
+
+
+
+# Create /etc/nginx/conf.d/ directory
+- name: Create nginx directory structure
+  file: path=/etc/nginx/sites-available/
+   state=directory
+   mode=0755
+#- name: Create nginx directory structure
+#  file: path=/etc/nginx/sites-enabled/
+#   state=directory
+#   mode=0755
+
+# Deploy kibana.conf with FQDN
+- name: Setup Nginx reverse proxy for kibana
+  template:
+   src=kibana.conf.j2
+   dest=/etc/nginx/sites-available/{{ domain }}
+   owner=root
+   group=root
+   mode=0644
+- name: Setup Nginx reverse proxy for kibana
+  template:
+   src=kibana.conf.j2
+   dest=/etc/nginx/sites-enabled/{{ domain }}
+   owner=root
+   group=root
+   mode=0644
+
+
+#register: nginx_needs_restart
+#wner=root
+#   group=root
+#      mode=0644
+#
+# Enable nginx service
+- name: Enabling Nginx service
+  systemd:
+   name: nginx
+   enabled: yes
+# Start Nginx service
+- name: Starting Nginx service
+  systemd:
+   name: nginx
+   state: started
+   daemon_reload: yes
+# Install Pexpect to handle promts of the terminal
+- name: Installing Python Pexpect
+  apt:
+   name: python-pexpect
+   update_cache: yes
+  when: ansible_os_family == 'Debian'
+
+
+- name: copy rpm
+  copy:
+    src: python-pexpect-3.3-6.1.noarch.rpm
+    dest: /home/python-pexpect-3.3-6.1.noarch.rpm
+
+
+
+- name: Installing Python Pexpect
+  yum:
+   name: /home/python-pexpect-3.3-6.1.noarch.rpm
+   state: present
+  when: ansible_os_family == 'RedHat'
+
+# Writes the create user script in the temp directory
+- name: Create kibana admin user
+  template:
+   src=kibanaAdmin.j2
+   dest=/tmp/createUser
+   owner=root
+   group=root
+   mode=0744
+# Runs the script to create Kibana admin user
+- name: Create Kibana admin user
+  expect:
+     command: bash /tmp/createUser
+     responses:
+       'Password:' : "{{kibana_password}}"
+# Restart Nginx service
+- name: Restart Nginx service
+  systemd:
+   name: nginx
+   state: reloaded
+   daemon_reload: yes
